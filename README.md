@@ -15,6 +15,14 @@
 
 </div>
 
+<p align="center">
+
+```bash
+git clone https://github.com/sceat/agent-pool.git ~/.claude/plugins/agent-pool && cd ~/.claude/plugins/agent-pool/servers/agent-pool && npm install
+```
+
+</p>
+
 ---
 
 ## ⚠️ Security Warning
