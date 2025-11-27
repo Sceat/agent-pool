@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.png" alt="agent-pool banner" width="100%">
+  <img src="https://raw.githubusercontent.com/Sceat/agent-pool/master/assets/banner.png?v=20241127" alt="agent-pool banner" width="100%">
 </p>
 
 <div align="center">
