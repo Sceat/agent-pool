@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
 import { readFileSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
@@ -13,9 +13,15 @@ const {
   SKILLS_DIR = join(__dirname, '..', '..', 'skills'),
   EXPERTISE_DIR = join(__dirname, '..', '..', 'expertise'),
   TASK_TIMEOUT_MS = '300000',
+  // CLI executable - allows override for testing or custom installations
+  CLAUDE_CLI = 'claude',
 } = process.env
 
+// Task execution timeout in milliseconds (default: 5 minutes)
 const TIMEOUT_MS = Number(TASK_TIMEOUT_MS)
+
+// Signal used for graceful agent termination
+const TERMINATION_SIGNAL = 'SIGTERM'
 
 /** @type {Map<string, { process: import('node:child_process').ChildProcess, buffer: string }>} */
 const agent_pool = new Map()
@@ -61,7 +67,10 @@ function parse_frontmatter(content) {
  * @returns {string | null}
  */
 function load_skill(skill_name) {
-  const skill_path = join(SKILLS_DIR, skill_name, 'SKILL.md')
+  const skill_path = resolve(SKILLS_DIR, skill_name, 'SKILL.md')
+  if (!skill_path.startsWith(resolve(SKILLS_DIR))) {
+    throw new Error(`Invalid skill name: path traversal detected`)
+  }
   if (!existsSync(skill_path)) {
     console.error(`[agent-pool] Skill not found: ${skill_path}`)
     return null
@@ -75,7 +84,10 @@ function load_skill(skill_name) {
  * @returns {string | null}
  */
 function load_expertise(expertise_name) {
-  const expertise_path = join(EXPERTISE_DIR, `${expertise_name}.md`)
+  const expertise_path = resolve(EXPERTISE_DIR, `${expertise_name}.md`)
+  if (!expertise_path.startsWith(resolve(EXPERTISE_DIR))) {
+    throw new Error(`Invalid expertise name: path traversal detected`)
+  }
   if (!existsSync(expertise_path)) {
     console.error(`[agent-pool] Expertise not found: ${expertise_path}`)
     return null
@@ -89,7 +101,10 @@ function load_expertise(expertise_name) {
  * @returns {string}
  */
 function compose_agent_prompt(agent_name) {
-  const agent_path = join(AGENTS_DIR, `${agent_name}.md`)
+  const agent_path = resolve(AGENTS_DIR, `${agent_name}.md`)
+  if (!agent_path.startsWith(resolve(AGENTS_DIR))) {
+    throw new Error(`Invalid agent name: path traversal detected`)
+  }
 
   if (!existsSync(agent_path)) {
     throw new Error(`Agent not found: ${agent_path}`)
@@ -138,7 +153,7 @@ function spawn_agent(agent_name) {
   const composed_prompt = compose_agent_prompt(agent_name)
 
   const child = spawn(
-    'claude',
+    CLAUDE_CLI,
     [
       '--input-format',
       'stream-json',
@@ -229,8 +244,11 @@ async function invoke_agent(agent_name, task) {
             send_clear_context(agent_name)
             resolve(result_text)
           }
-        } catch {
-          // Ignore non-JSON lines
+        } catch (error) {
+          // SyntaxError expected for non-JSON lines (e.g. progress output)
+          if (!(error instanceof SyntaxError)) {
+            console.error(`[${agent_name}:parse] Unexpected error: ${error}`)
+          }
         }
       }
     }
@@ -299,7 +317,7 @@ function reset_agent(agent_name) {
   const agent = agent_pool.get(agent_name)
   if (!agent) return false
 
-  agent.process.kill('SIGTERM')
+  agent.process.kill(TERMINATION_SIGNAL)
   agent_pool.delete(agent_name)
   return true
 }

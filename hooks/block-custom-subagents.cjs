@@ -27,7 +27,8 @@ async function main() {
   let data
   try {
     data = JSON.parse(input)
-  } catch {
+  } catch (error) {
+    console.error(`Hook parse error: ${error.message}`)
     console.log(approve)
     return
   }
@@ -54,7 +55,18 @@ async function main() {
 
   // Check if custom agent exists in .claude/agents/
   const cwd = process.cwd()
-  const agent_path = path.join(cwd, '.claude', 'agents', `${subagent_type}.md`)
+  const agents_dir = path.resolve(cwd, '.claude', 'agents')
+  const agent_path = path.resolve(agents_dir, `${subagent_type}.md`)
+
+  if (!agent_path.startsWith(agents_dir)) {
+    console.log(
+      JSON.stringify({
+        decision: 'block',
+        reason: `Invalid agent name: path traversal detected`,
+      }),
+    )
+    return
+  }
 
   if (fs.existsSync(agent_path)) {
     console.log(
