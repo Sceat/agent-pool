@@ -11,9 +11,9 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const {
-  AGENTS_DIR = join(__dirname, '..', '..', 'agents'),
-  SKILLS_DIR = join(__dirname, '..', '..', 'skills'),
-  EXPERTISE_DIR = join(__dirname, '..', '..', 'expertise'),
+  AGENTS_DIR = join(process.cwd(), '.claude', 'agents'),
+  SKILLS_DIR = join(process.cwd(), '.claude', 'skills'),
+  EXPERTISE_DIR = join(process.cwd(), '.claude', 'expertise'),
   TASK_TIMEOUT_MS = '300000',
   // CLI executable - allows override for testing or custom installations
   CLAUDE_CLI = 'claude',
@@ -359,6 +359,9 @@ server.tool(
   },
   async ({ agent, task }) => {
     try {
+      if (!agent) {
+        throw new Error('Missing required parameter: agent')
+      }
       const result = await invoke_agent(agent, task)
       return {
         content: [{ type: 'text', text: result }],
