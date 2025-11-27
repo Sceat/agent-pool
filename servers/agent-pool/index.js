@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process'
+import { readFileSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
@@ -9,6 +10,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const {
   AGENTS_DIR = join(__dirname, '..', '..', 'agents'),
+  SKILLS_DIR = join(__dirname, '..', '..', 'skills'),
+  EXPERTISE_DIR = join(__dirname, '..', '..', 'expertise'),
   TASK_TIMEOUT_MS = '300000',
 } = process.env
 
@@ -18,12 +21,121 @@ const TIMEOUT_MS = Number(TASK_TIMEOUT_MS)
 const agent_pool = new Map()
 
 /**
+ * Parse YAML frontmatter from markdown content
+ * @param {string} content
+ * @returns {{ skills: string[], expertise: string[], body: string }}
+ */
+function parse_frontmatter(content) {
+  const result = { skills: [], expertise: [], body: content }
+
+  const frontmatter_match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/)
+  if (!frontmatter_match) return result
+
+  const [, yaml_block, body] = frontmatter_match
+  result.body = body
+
+  // Parse skills array
+  const skills_match = yaml_block.match(/skills:\s*\n((?:\s*-\s*.+\n?)+)/i)
+  if (skills_match) {
+    result.skills = skills_match[1]
+      .split('\n')
+      .map(line => line.replace(/^\s*-\s*/, '').trim())
+      .filter(Boolean)
+  }
+
+  // Parse expertise array
+  const expertise_match = yaml_block.match(/expertise:\s*\n((?:\s*-\s*.+\n?)+)/i)
+  if (expertise_match) {
+    result.expertise = expertise_match[1]
+      .split('\n')
+      .map(line => line.replace(/^\s*-\s*/, '').trim())
+      .filter(Boolean)
+  }
+
+  return result
+}
+
+/**
+ * Load a skill file content
+ * @param {string} skill_name
+ * @returns {string | null}
+ */
+function load_skill(skill_name) {
+  const skill_path = join(SKILLS_DIR, skill_name, 'SKILL.md')
+  if (!existsSync(skill_path)) {
+    console.error(`[agent-pool] Skill not found: ${skill_path}`)
+    return null
+  }
+  return readFileSync(skill_path, 'utf-8')
+}
+
+/**
+ * Load an expertise file content
+ * @param {string} expertise_name
+ * @returns {string | null}
+ */
+function load_expertise(expertise_name) {
+  const expertise_path = join(EXPERTISE_DIR, `${expertise_name}.md`)
+  if (!existsSync(expertise_path)) {
+    console.error(`[agent-pool] Expertise not found: ${expertise_path}`)
+    return null
+  }
+  return readFileSync(expertise_path, 'utf-8')
+}
+
+/**
+ * Compose full agent prompt with skills and expertise
+ * @param {string} agent_name
+ * @returns {string}
+ */
+function compose_agent_prompt(agent_name) {
+  const agent_path = join(AGENTS_DIR, `${agent_name}.md`)
+
+  if (!existsSync(agent_path)) {
+    throw new Error(`Agent not found: ${agent_path}`)
+  }
+
+  const content = readFileSync(agent_path, 'utf-8')
+  const { skills, expertise, body } = parse_frontmatter(content)
+
+  const sections = []
+
+  // Environment header
+  sections.push(`# Environment
+Working directory: ${process.cwd()}
+Date: ${new Date().toISOString()}
+---
+`)
+
+  // Inject skills
+  for (const skill_name of skills) {
+    const skill_content = load_skill(skill_name)
+    if (skill_content) {
+      sections.push(`# Skill: ${skill_name}\n${skill_content}\n`)
+    }
+  }
+
+  // Inject expertise
+  for (const expertise_name of expertise) {
+    const expertise_content = load_expertise(expertise_name)
+    if (expertise_content) {
+      sections.push(`# Expertise: ${expertise_name}\n${expertise_content}\n`)
+    }
+  }
+
+  // Agent body
+  sections.push(body)
+
+  return sections.join('\n')
+}
+
+/**
  * Spawn a Claude CLI subprocess with stream-json mode
  * @param {string} agent_name
  * @returns {import('node:child_process').ChildProcess}
  */
 function spawn_agent(agent_name) {
-  const agent_path = join(AGENTS_DIR, `${agent_name}.md`)
+  const composed_prompt = compose_agent_prompt(agent_name)
 
   const child = spawn(
     'claude',
@@ -32,8 +144,8 @@ function spawn_agent(agent_name) {
       'stream-json',
       '--output-format',
       'stream-json',
-      '--system-prompt-file',
-      agent_path,
+      '--system-prompt',
+      composed_prompt,
       '--dangerously-skip-permissions',
     ],
     {

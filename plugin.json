@@ -12,16 +12,18 @@
       "command": "node",
       "args": ["./servers/agent-pool/index.js"],
       "env": {
-        "AGENTS_DIR": "${pluginDir}/agents"
+        "AGENTS_DIR": "${pluginDir}/agents",
+        "SKILLS_DIR": "${pluginDir}/skills",
+        "EXPERTISE_DIR": "${pluginDir}/expertise"
       }
     }
   },
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "mcp__subagent-runner__*",
-        "command": "bash",
-        "args": ["./hooks/block-legacy-subagent.sh"]
+        "matcher": "Task",
+        "command": "node",
+        "args": ["./hooks/block-custom-subagents.cjs"]
       }
     ]
   }
