@@ -1,0 +1,22 @@
+{
+  "name": "agent-pool",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "A workaround for Claude Code's memory leak issues. Spawn agents once, reuse indefinitely.",
+  "bin": "./servers/agent-pool/index.js",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sceat/agent-pool.git"
+  },
+  "keywords": [
+    "claude",
+    "mcp",
+    "agent",
+    "pool"
+  ],
+  "author": "Sceat",
+  "license": "MIT"
+}

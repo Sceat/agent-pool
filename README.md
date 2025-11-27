@@ -18,7 +18,7 @@
 <p align="center">
 
 ```bash
-claude mcp add Sceat/agent-pool
+claude mcp add agent-pool -- npx -y github:Sceat/agent-pool
 ```
 
 </p>
@@ -83,7 +83,7 @@ Task N → OOM KILLED 💀                  Task N → still 450MB ✓
 ## Quick Start
 
 ```bash
-claude mcp add Sceat/agent-pool
+claude mcp add agent-pool -- npx -y github:Sceat/agent-pool
 ```
 
 ```javascript
