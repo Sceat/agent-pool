@@ -18,7 +18,7 @@
 <p align="center">
 
 ```bash
-git clone https://github.com/sceat/agent-pool.git ~/.claude/plugins/agent-pool && cd ~/.claude/plugins/agent-pool/servers/agent-pool && npm install
+claude mcp add Sceat/agent-pool
 ```
 
 </p>
@@ -83,11 +83,7 @@ Task N → OOM KILLED 💀                  Task N → still 450MB ✓
 ## Quick Start
 
 ```bash
-# Install
-git clone https://github.com/sceat/agent-pool.git ~/.claude/plugins/agent-pool
-cd ~/.claude/plugins/agent-pool/servers/agent-pool && npm install
-
-# Restart Claude Code
+claude mcp add Sceat/agent-pool
 ```
 
 ```javascript
