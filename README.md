@@ -178,6 +178,42 @@ Then invoke: `mcp__agent-pool__invoke({ agent: "my-agent", task: "..." })`
 
 ---
 
+## 💡 Pro Tips
+
+### Disable MCP servers for main orchestrator, enable only for subagents
+
+When using an orchestrator pattern, the main Claude instance doesn't need direct tool access—it should only delegate to specialized agents.
+
+**Why this matters:**
+- **Reduces context pollution** - Main instance focuses on orchestration, not tool outputs
+- **Enforces the pattern** - Prevents accidental direct tool use
+- **Cleaner separation** - Orchestrator thinks, subagents act
+
+**Tool access pattern:**
+
+| Instance | Tools |
+|----------|-------|
+| Main orchestrator | `mcp__agent-pool__invoke`, `Task`, `AskUserQuestion`, `TodoWrite` |
+| Subagents | Full MCP access (Bash, Read, Write, Grep, etc.) |
+
+**How to configure:**
+
+1. **CLAUDE.md approach** - Forbid direct tool use in your orchestrator's instructions:
+   ```markdown
+   # Orchestrator Rules
+   - NEVER use Bash, Read, Write, Edit, or Grep directly
+   - ALWAYS delegate work to specialized agents via mcp__agent-pool__invoke
+   - Only use AskUserQuestion for user clarification
+   ```
+
+2. **Selective MCP registration** - Only register agent-pool for the main instance, not file/shell MCPs
+
+3. **Hooks** - Use Claude Code hooks to block certain tools for the main instance
+
+This pattern keeps your orchestrator clean and forces proper delegation.
+
+---
+
 ## Troubleshooting
 
 | Issue | Solution |
