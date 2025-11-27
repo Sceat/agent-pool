@@ -1,0 +1,19 @@
+{
+  "name": "agent-pool",
+  "version": "1.0.0",
+  "description": "Persistent multi-agent orchestration with prompt caching. Spawns agents once, reuses with /clear for max token efficiency.",
+  "author": "sceat",
+  "license": "MIT",
+  "homepage": "https://github.com/sceat/agent-pool",
+  "repository": "https://github.com/sceat/agent-pool",
+  "keywords": ["agents", "orchestration", "multi-agent", "token-efficiency", "prompt-caching"],
+  "mcpServers": {
+    "agent-pool": {
+      "command": "node",
+      "args": ["./servers/agent-pool/index.js"],
+      "env": {
+        "AGENTS_DIR": "${pluginDir}/agents"
+      }
+    }
+  }
+}
