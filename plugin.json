@@ -15,5 +15,14 @@
         "AGENTS_DIR": "${pluginDir}/agents"
       }
     }
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__subagent-runner__*",
+        "command": "bash",
+        "args": ["./hooks/block-legacy-subagent.sh"]
+      }
+    ]
   }
 }
